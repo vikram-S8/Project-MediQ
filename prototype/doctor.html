@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Doctor Dashboard</title>
+<style>
+body { font-family: Arial; background:#e8f8f0; }
+.header { background:#28a745; color:white; padding:15px; text-align:center; }
+.card {
+  background:white; margin:10px; padding:15px;
+  border-radius:8px; box-shadow:0 0 5px #aaa;
+}
+button { background:#28a745; color:white; border:none; padding:8px; }
+</style>
+</head>
+
+<body>
+<div class="header"><h2>👨‍⚕️ Doctor Dashboard</h2></div>
+<div id="list"></div>
+
+<script>
+async function load(){
+  const res = await fetch("http://localhost:5000/requests/Doctor");
+  const data = await res.json();
+
+  list.innerHTML = data.map(r=>`
+    <div class="card">
+      <b>${r.patientName}</b><br>
+      ${r.type}<br><br>
+      <button onclick="next('${r.id}')">Approve →</button>
+    </div>
+  `).join('');
+}
+
+async function next(id){
+  await fetch("http://localhost:5000/next/"+id,{method:"PUT"});
+  load();
+}
+
+load();
+</script>
+</body>
+</html>

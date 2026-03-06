@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Dashboard</title>
+<style>
+body { font-family: Arial; background:#f3e8ff; }
+.header { background:#6f42c1; color:white; padding:15px; text-align:center; }
+.card {
+  background:white; margin:10px; padding:15px;
+  border-left:5px solid #6f42c1;
+}
+button { background:#6f42c1; color:white; padding:8px; border:none; }
+</style>
+</head>
+
+<body>
+<div class="header"><h2>🏥 Admin Panel</h2></div>
+<div id="list"></div>
+
+<script>
+async function load(){
+  const res = await fetch("http://localhost:5000/requests/Admin");
+  const data = await res.json();
+
+  list.innerHTML = data.map(r=>`
+    <div class="card">
+      ${r.patientName}<br>
+      <button onclick="next('${r.id}')">Approve</button>
+    </div>
+  `).join('');
+}
+
+async function next(id){
+  await fetch("http://localhost:5000/next/"+id,{method:"PUT"});
+  load();
+}
+
+load();
+</script>
+</body>
+</html>

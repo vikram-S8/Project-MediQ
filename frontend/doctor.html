@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard | Hospital Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #071415;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(16, 185, 129, 0.2);
+            --accent-blue: #0ea5e9;
+            --accent-green: #10b981;
+            --text-main: #e2e8f0;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: radial-gradient(circle at top right, #0f172a, #071415); 
+            color: var(--text-main);
+            margin: 0; 
+            padding: 20px; 
+            min-height: 100vh;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            padding: 20px 30px;
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            margin-bottom: 30px;
+        }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        
+        .card { 
+            background: var(--card-bg); 
+            backdrop-filter: blur(15px);
+            padding: 25px; 
+            border-radius: 16px; 
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        
+        .card h3 { margin-top: 0; color: #fff; }
+        .details { margin: 15px 0; color: #94a3b8; font-size: 0.95em; line-height: 1.6; }
+        
+        .actions { display: flex; gap: 10px; margin-top: 20px; }
+        button { 
+            cursor: pointer; border: none; padding: 12px; border-radius: 8px; 
+            color: white; font-weight: 600; flex: 1; transition: all 0.3s ease;
+        }
+
+        /* Glossy Buttons */
+        .btn-admin { background: linear-gradient(135deg, #8b5cf6, #6366f1); }
+        .btn-lab { background: linear-gradient(135deg, var(--accent-blue), var(--accent-green)); }
+        
+        button:hover { transform: translateY(-2px); filter: brightness(1.2); }
+        
+        .logout-btn { background: #475569; padding: 8px 20px; flex: 0; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>Doctor Dashboard</h2>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div id="doctor-container" class="grid"></div>
+
+    <script>
+        const API_URL = "http://localhost:5000/api/requests";
+        const token = localStorage.getItem("token");
+
+        if (!token || localStorage.getItem("role") !== "Doctor") {
+            window.location.href = "index.html";
+        }
+
+        async function loadDashboard() {
+            try {
+                const res = await fetch(`${API_URL}/role/Doctor`, {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const data = await res.json();
+                const container = document.getElementById("doctor-container");
+
+                if (data.length === 0) {
+                    container.innerHTML = "<p style='text-align:center; color:#64748b;'>No pending requests.</p>";
+                    return;
+                }
+
+                container.innerHTML = data.map(r => `
+                    <div class="card">
+                        <h3>${r.patientName}</h3>
+                        <div class="details">
+                            <p><strong>Type:</strong> ${r.type}</p>
+                            <p><strong>Priority:</strong> ${r.priority}</p>
+                            <p><strong>Request:</strong> ${r.description || 'N/A'}</p>
+                        </div>
+                        <div class="actions">
+                            <button class="btn-admin" onclick="forwardRequest('${r._id}', 'Admin')">To Admin</button>
+                            <button class="btn-lab" onclick="forwardRequest('${r._id}', 'Lab')">To Lab</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error("Fetch error:", err);
+            }
+        }
+
+        async function forwardRequest(id, destination) {
+            try {
+                const response = await fetch(`${API_URL}/forward/${id}`, {
+                    method: "PUT",
+                    headers: { 
+                        "Authorization": "Bearer " + token,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ destination })
+                });
+
+                if (response.ok) {
+                    alert(`Request sent to ${destination} successfully.`);
+                    loadDashboard();
+                } else {
+                    alert("Failed to forward request.");
+                }
+            } catch (err) {
+                console.error("Action error:", err);
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = "index.html";
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

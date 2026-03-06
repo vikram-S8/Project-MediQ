@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MediQ Admin Panel</title>
+
+<style>
+:root{
+--bg:#f8fafc;
+--accent:#3b82f6;
+--success:#10b981;
+--border:#e2e8f0;
+}
+
+body{
+font-family:'Segoe UI',sans-serif;
+background:var(--bg);
+margin:0;
+padding:2rem;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:2rem;
+}
+
+.stats-bar{
+display:flex;
+gap:20px;
+margin-bottom:2rem;
+}
+
+.stat-card{
+background:white;
+padding:1rem 2rem;
+border-radius:10px;
+border:1px solid var(--border);
+}
+
+.dashboard-grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(350px,1fr));
+gap:20px;
+}
+
+.section{
+background:white;
+padding:1.5rem;
+border-radius:12px;
+border:1px solid var(--border);
+}
+
+.request-card{
+border:1px solid var(--border);
+padding:1rem;
+border-radius:8px;
+margin-bottom:10px;
+}
+
+.btn{
+background:var(--success);
+color:white;
+border:none;
+padding:8px 10px;
+border-radius:6px;
+cursor:pointer;
+width:100%;
+margin-top:10px;
+}
+
+.btn:hover{
+background:#059669;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<h2>MediQ Admin Dashboard</h2>
+<button onclick="logout()" style="background:red;color:white;border:none;padding:8px 16px;border-radius:6px;">Logout</button>
+</div>
+
+<div class="stats-bar" id="stats"></div>
+
+<div class="dashboard-grid" id="container"></div>
+
+<script>
+
+const token = localStorage.getItem("token");
+
+async function loadDashboard(){
+
+const res = await fetch("http://localhost:5000/api/admin/overview",{
+headers:{
+"Authorization":"Bearer "+token
+}
+});
+
+const data = await res.json();
+
+renderUI(data);
+
+}
+
+function renderUI(data){
+
+const container=document.getElementById("container");
+const stats=document.getElementById("stats");
+
+let total=0;
+
+container.innerHTML=data.map(section=>{
+
+total+=section.requests.length;
+
+return `
+<div class="section">
+
+<h3>${section.name}</h3>
+
+${section.requests.length===0
+? "<p>No pending requests</p>"
+: ""}
+
+${section.requests.map(r=>`
+
+<div class="request-card">
+
+<strong>Patient:</strong> ${r.patientName}<br>
+<strong>Type:</strong> ${r.type}<br>
+<strong>Description:</strong> ${r.description || "N/A"}
+
+<button class="btn" onclick="approve('${r._id}')">
+Approve & Move Forward
+</button>
+
+</div>
+
+`).join("")}
+
+</div>
+`
+
+}).join("");
+
+stats.innerHTML=`
+<div class="stat-card">
+Total Admin Requests: <strong>${total}</strong>
+</div>
+`;
+
+}
+
+async function approve(id){
+
+const res=await fetch("http://localhost:5000/api/requests/next/"+id,{
+method:"PUT",
+headers:{
+"Authorization":"Bearer "+token
+}
+});
+
+if(res.ok){
+alert("Request moved to next stage");
+loadDashboard();
+}
+
+}
+
+function logout(){
+localStorage.clear();
+location="index.html";
+}
+
+loadDashboard();
+
+</script>
+
+</body>
+</html>

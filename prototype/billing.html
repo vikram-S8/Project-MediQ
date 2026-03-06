@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Billing Dashboard</title>
+<style>
+body { font-family: Arial; background:#fff4e6; }
+.header { background:#fd7e14; color:white; padding:15px; text-align:center; }
+.card {
+  background:white; margin:10px; padding:15px;
+  border-radius:5px;
+}
+button { background:#fd7e14; color:white; padding:8px; border:none; }
+</style>
+</head>
+
+<body>
+<div class="header"><h2>💰 Billing Section</h2></div>
+<div id="list"></div>
+
+<script>
+async function load(){
+  const res = await fetch("http://localhost:5000/requests/Billing");
+  const data = await res.json();
+
+  list.innerHTML = data.map(r=>`
+    <div class="card">
+      ${r.patientName}<br>
+      <button onclick="next('${r.id}')">Process Payment</button>
+    </div>
+  `).join('');
+}
+
+async function next(id){
+  await fetch("http://localhost:5000/next/"+id,{method:"PUT"});
+  load();
+}
+
+load();
+</script>
+</body>
+</html>

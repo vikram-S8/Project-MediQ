@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OT Management System</title>
+
+<style>
+
+:root{
+--primary:#0f172a;
+--accent:#2563eb;
+--success:#16a34a;
+--bg:#f1f5f9;
+}
+
+body{
+font-family:Arial, sans-serif;
+background:var(--bg);
+margin:0;
+padding:20px;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+}
+
+.grid-layout{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px;
+}
+
+.panel{
+background:white;
+padding:20px;
+border-radius:12px;
+box-shadow:0 4px 6px rgba(0,0,0,0.1);
+}
+
+.panel h3{
+margin-top:0;
+border-bottom:2px solid var(--bg);
+padding-bottom:10px;
+color:var(--primary);
+}
+
+.card{
+border:1px solid #e2e8f0;
+padding:15px;
+border-radius:8px;
+margin-bottom:15px;
+}
+
+.btn{
+cursor:pointer;
+padding:8px 12px;
+border-radius:6px;
+border:none;
+color:white;
+font-weight:600;
+}
+
+.btn-primary{
+background:var(--accent);
+}
+
+.btn-success{
+background:var(--success);
+}
+
+.logout-btn{
+background:#ef4444;
+}
+
+#scheduler-modal{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.5);
+justify-content:center;
+align-items:center;
+}
+
+.modal-content{
+background:white;
+padding:30px;
+border-radius:12px;
+width:400px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<h1>OT Command Center</h1>
+<button onclick="logout()" class="btn logout-btn">Logout</button>
+</div>
+
+<div class="grid-layout">
+
+<div class="panel">
+<h3>Waiting for Schedule</h3>
+<div id="queue-list"></div>
+</div>
+
+<div class="panel">
+<h3>Currently In Theatre</h3>
+<div id="active-list"></div>
+</div>
+
+</div>
+
+
+<!-- MODAL -->
+
+<div id="scheduler-modal">
+
+<div class="modal-content">
+
+<h3>Schedule Operation</h3>
+
+<input type="hidden" id="active-req-id">
+
+<label>Date & Time:</label>
+
+<input type="datetime-local" id="sched-time" style="width:100%;margin:10px 0;padding:8px;">
+
+<div style="display:flex;gap:10px">
+
+<button class="btn btn-primary" onclick="confirmSchedule()">Confirm Slot</button>
+
+<button class="btn" style="background:#64748b" onclick="closeModal()">Cancel</button>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+const token = localStorage.getItem("token");
+const role = localStorage.getItem("role");
+
+
+// 🔐 LOGIN CHECK
+
+if(!token || role !== "OT"){
+alert("Login first");
+location = "index.html";
+}
+
+
+// LOAD OT REQUESTS
+
+async function loadData(){
+
+try{
+
+const res = await fetch("http://localhost:5000/api/requests/OT",{
+
+headers:{
+"Authorization":"Bearer " + token
+}
+
+});
+
+const data = await res.json();
+
+if(!Array.isArray(data)){
+console.error("Invalid response",data);
+return;
+}
+
+const queueList = document.getElementById("queue-list");
+const activeList = document.getElementById("active-list");
+
+queueList.innerHTML="";
+activeList.innerHTML="";
+
+
+data.forEach(r=>{
+
+const card = `
+<div class="card">
+
+<strong>${r.patientName}</strong>
+
+<p style="font-size:0.85rem;color:#666;">
+Requirement: ${r.description || "N/A"}
+</p>
+
+${
+r.status === "Scheduled"
+?
+`<button class="btn btn-success" onclick="completeOp('${r._id}')">
+Mark Complete
+</button>`
+:
+`<button class="btn btn-primary" onclick="openModal('${r._id}')">
+Schedule Now
+</button>`
+}
+
+</div>
+`;
+
+
+if(r.status === "Scheduled"){
+activeList.innerHTML += card;
+}
+else{
+queueList.innerHTML += card;
+}
+
+});
+
+}catch(err){
+
+console.error("OT fetch error:",err);
+
+}
+
+}
+
+
+// OPEN MODAL
+
+function openModal(id){
+
+document.getElementById("active-req-id").value=id;
+
+document.getElementById("scheduler-modal").style.display="flex";
+
+}
+
+
+// CLOSE MODAL
+
+function closeModal(){
+
+document.getElementById("scheduler-modal").style.display="none";
+
+}
+
+
+// CONFIRM SCHEDULE
+
+async function confirmSchedule(){
+
+const id = document.getElementById("active-req-id").value;
+const time = document.getElementById("sched-time").value;
+
+await fetch(`http://localhost:5000/api/requests/schedule/${id}`,{
+
+method:"PUT",
+
+headers:{
+"Authorization":"Bearer "+token,
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+scheduledTime:time
+})
+
+});
+
+closeModal();
+loadData();
+
+}
+
+
+// COMPLETE OPERATION
+
+async function completeOp(id){
+
+await fetch(`http://localhost:5000/api/requests/next/${id}`,{
+
+method:"PUT",
+
+headers:{
+"Authorization":"Bearer "+token
+}
+
+});
+
+loadData();
+
+}
+
+
+// LOGOUT
+
+function logout(){
+
+localStorage.clear();
+location="index.html";
+
+}
+
+
+// AUTO LOAD
+
+loadData();
+
+</script>
+
+</body>
+</html>
