@@ -1,120 +1,277 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hospital Portal | Login</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            /* Updated to a teal/greenish-blue palette */
-            --primary: #0d9488;
-            --primary-hover: #115e59;
-            --bg-gradient: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 100%);
-            --card-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background: var(--bg-gradient); 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-        .card {
-            background: white; 
-            padding: 40px; 
-            width: 100%; 
-            max-width: 360px; 
-            border-radius: 16px; 
-            box-shadow: var(--card-shadow);
-        }
-        /* Logo Container */
-        .logo {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-        .logo img {
-            width: 160px; /* Adjust size as needed */
-            height: auto;
-        }
-        
-        .input-group { margin-bottom: 16px; }
-        input { 
-            width: 100%; padding: 12px; border: 1px solid #cbd5e1; 
-            border-radius: 8px; box-sizing: border-box; font-size: 14px;
-            transition: border-color 0.2s;
-        }
-        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px #ccfbf1; }
-        
-        button { 
-            width: 100%; padding: 12px; background: var(--primary); 
-            color: white; border: none; border-radius: 8px; font-weight: 600; 
-            cursor: pointer; transition: background 0.2s; margin-top: 8px;
-        }
-        button:hover { background: var(--primary-hover); }
-        button:disabled { background: #94a3b8; cursor: not-allowed; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediQ Portal</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+
+:root{
+--primary:#0d9488;
+--primary-hover:#115e59;
+--bg-gradient:linear-gradient(135deg,#f0fdfa,#e0f2fe);
+--shadow:0 20px 25px rgba(0,0,0,0.1);
+}
+
+body{
+font-family:'Inter',sans-serif;
+background:var(--bg-gradient);
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+margin:0;
+}
+
+.card{
+background:white;
+padding:40px;
+width:360px;
+border-radius:16px;
+box-shadow:var(--shadow);
+}
+
+.logo{
+text-align:center;
+margin-bottom:20px;
+}
+
+.logo img{
+width:150px;
+}
+
+.tabs{
+display:flex;
+margin-bottom:20px;
+}
+
+.tab{
+flex:1;
+text-align:center;
+padding:10px;
+cursor:pointer;
+border-bottom:2px solid transparent;
+}
+
+.tab.active{
+border-color:var(--primary);
+font-weight:600;
+}
+
+input,select{
+width:100%;
+padding:12px;
+margin-bottom:12px;
+border-radius:8px;
+border:1px solid #cbd5e1;
+}
+
+button{
+width:100%;
+padding:12px;
+background:var(--primary);
+border:none;
+border-radius:8px;
+color:white;
+font-weight:600;
+cursor:pointer;
+}
+
+button:hover{
+background:var(--primary-hover);
+}
+
+.hidden{
+display:none;
+}
+
+</style>
 </head>
 
 <body>
+
 <div class="card">
-    <div class="logo">
-        <img src="logo.png" alt="Hospital Logo">
-    </div>
-    
-    <div class="input-group">
-        <input id="email" placeholder="Institutional Email">
-    </div>
-    <div class="input-group">
-        <input id="password" type="password" placeholder="Password">
-    </div>
-    <button id="loginBtn" onclick="login()">Sign In</button>
+
+<div class="logo">
+<img src="logo.png">
+</div>
+
+<div class="tabs">
+<div class="tab active" onclick="showLogin()">Login</div>
+<div class="tab" onclick="showRegister()">Register</div>
+</div>
+
+<!-- LOGIN FORM -->
+
+<div id="loginForm">
+
+<input id="loginEmail" placeholder="Email">
+
+<input id="loginPassword" type="password" placeholder="Password">
+
+<button onclick="login()">Sign In</button>
+
+</div>
+
+
+<!-- REGISTER FORM -->
+
+<div id="registerForm" class="hidden">
+
+<input id="regName" placeholder="Full Name">
+
+<input id="regEmail" placeholder="Email">
+
+<input id="regPassword" type="password" placeholder="Password">
+
+<select id="regRole">
+
+<option value="Patient">Patient</option>
+<option value="Doctor">Doctor</option>
+<option value="Admin">Admin</option>
+<option value="Billing">Billing</option>
+<option value="OT">OT</option>
+
+</select>
+
+<button onclick="register()">Create Account</button>
+
+</div>
+
 </div>
 
 <script>
-    async function login() {
-        const btn = document.getElementById("loginBtn");
-        btn.innerText = "Authenticating...";
-        btn.disabled = true;
 
-        try {
-            const res = await fetch("http://localhost:5000/api/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    email: document.getElementById("email").value,
-                    password: document.getElementById("password").value
-                })
-            });
+const API="http://localhost:5000/api/auth"
 
-            if (!res.ok) throw new Error("Invalid credentials");
+function showLogin(){
 
-            const data = await res.json();
+document.getElementById("loginForm").classList.remove("hidden")
+document.getElementById("registerForm").classList.add("hidden")
 
-            localStorage.setItem("token", data.token);
-            localStorage.setItem("role", data.role);
+document.querySelectorAll(".tab")[0].classList.add("active")
+document.querySelectorAll(".tab")[1].classList.remove("active")
 
-            const routes = {
-                "Doctor": "doctor.html",
-                "Admin": "admin.html",
-                "Billing": "billing.html",
-                "OT": "ot.html",
-                "Patient": "patient.html"
-            };
+}
 
-            if (routes[data.role]) {
-                location.href = routes[data.role];
-            } else {
-                alert("Role not recognized.");
-            }
-        } catch (err) {
-            alert("Login Failed: " + err.message);
-            btn.innerText = "Sign In";
-            btn.disabled = false;
-        }
-    }
+function showRegister(){
+
+document.getElementById("registerForm").classList.remove("hidden")
+document.getElementById("loginForm").classList.add("hidden")
+
+document.querySelectorAll(".tab")[1].classList.add("active")
+document.querySelectorAll(".tab")[0].classList.remove("active")
+
+}
+
+
+async function register(){
+
+try{
+
+const name=document.getElementById("regName").value
+const email=document.getElementById("regEmail").value
+const password=document.getElementById("regPassword").value
+const role=document.getElementById("regRole").value
+
+const res=await fetch(API+"/register",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+name,
+email,
+password,
+role
+})
+
+})
+
+if(!res.ok){
+
+const err=await res.json()
+throw new Error(err.msg || "Registration failed")
+
+}
+
+alert("Registration successful")
+
+// auto login after register
+
+document.getElementById("loginEmail").value=email
+document.getElementById("loginPassword").value=password
+
+showLogin()
+
+}catch(err){
+
+alert(err.message)
+
+}
+
+}
+
+
+async function login(){
+
+try{
+
+const res=await fetch(API+"/login",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+email:document.getElementById("loginEmail").value,
+password:document.getElementById("loginPassword").value
+
+})
+
+})
+
+if(!res.ok){
+
+throw new Error("Invalid credentials")
+
+}
+
+const data=await res.json()
+
+localStorage.setItem("token",data.token)
+localStorage.setItem("role",data.role)
+
+const routes={
+
+Patient:"patient.html",
+Doctor:"doctor.html",
+Admin:"admin.html",
+Billing:"billing.html",
+OT:"ot.html"
+
+}
+
+location.href=routes[data.role]
+
+}catch(err){
+
+alert(err.message)
+
+}
+
+}
+
 </script>
+
 </body>
 </html>

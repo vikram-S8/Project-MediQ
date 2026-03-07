@@ -1,33 +1,19 @@
-const router = require("express").Router();
-const auth = require("../middleware/authMiddleware");
-const ctrl = require("../controllers/requestController");
+const router=require("express").Router()
 
-// CREATE REQUEST
-router.post("/create", auth, ctrl.createRequest);
+const auth=require("../middleware/authMiddleware")
 
-// PATIENT REQUESTS
-router.get("/my", auth, ctrl.getMyRequests);
+const ctrl=require("../controllers/requestController")
 
-// DELETE REQUEST
-router.delete("/delete/:id", auth, ctrl.deleteRequest);
+router.post("/create",auth,ctrl.createRequest)
 
-// ROLE BASED REQUESTS
-router.get("/role/:role", auth, ctrl.getByRole);
+router.get("/my",auth,ctrl.getMyRequests)
 
-// SHORTCUT ROUTES
-router.get("/OT", auth, (req, res) => {
-  req.params.role = "OT";
-  ctrl.getByRole(req, res);
-});
+router.get("/role/:role",auth,ctrl.getByRole)
 
-router.get("/Billing", auth, (req, res) => {
-  req.params.role = "Billing";
-  ctrl.getByRole(req, res);
-});
+router.put("/forward/:id",auth,ctrl.forwardRequest)
 
-// WORKFLOW ACTIONS
-router.put("/forward/:id", auth, ctrl.forwardRequest);
-router.put("/next/:id", auth, ctrl.nextStage);
-router.put("/schedule/:id", auth, ctrl.schedule);
+router.put("/next/:id",auth,ctrl.nextStage)
 
-module.exports = router;
+router.put("/schedule/:id",auth,ctrl.schedule)
+
+module.exports=router

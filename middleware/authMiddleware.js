@@ -1,21 +1,23 @@
-const jwt = require("jsonwebtoken");
+const jwt=require("jsonwebtoken")
 
-module.exports = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+module.exports=(req,res,next)=>{
 
-  if (!authHeader) {
-    return res.status(401).json({ message: "No token" });
-  }
+const token=req.headers.authorization?.split(" ")[1]
 
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.split(" ")[1]
-    : authHeader; // fallback for your broken frontend
+if(!token) return res.status(401).json({msg:"No token"})
 
-  try {
-    const decoded = jwt.verify(token, "secretkey");
-    req.user = decoded;
-    next();
-  } catch {
-    res.status(401).json({ message: "Invalid token" });
-  }
-};
+try{
+
+const decoded=jwt.verify(token,process.env.JWT_SECRET)
+
+req.user=decoded
+
+next()
+
+}catch(err){
+
+res.status(401).json({msg:"Invalid token"})
+
+}
+
+}

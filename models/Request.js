@@ -1,37 +1,42 @@
-const mongoose = require("mongoose");
+const mongoose=require("mongoose")
 
-const requestSchema = new mongoose.Schema({
-  patientName: String,
-  description: String,
-  type: String,
-  priority: String,
+const requestSchema=new mongoose.Schema({
 
-  status: {
-    type: String,
-    default: "Pending"
-  },
+patientName:String,
 
-  workflow: {
-    type: [String],
-    default: ["Doctor", "Admin", "Billing", "OT"]
-  },
+description:String,
 
-  stageIndex: {
-    type: Number,
-    default: 0
-  },
+type:String,
 
-  currentStage: {
-    type: String,
-    default: "Doctor"
-  },
+priority:String,
 
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
-  },
+status:{
+type:String,
+default:"Pending"
+},
 
-  scheduledTime: String
-}, { timestamps: true });
+workflow:{
+type:[String],
+default:["Doctor","Admin","Billing","OT"]
+},
 
-module.exports = mongoose.model("Request", requestSchema);
+stageIndex:{
+type:Number,
+default:0
+},
+
+currentStage:{
+type:String,
+default:"Doctor"
+},
+
+createdBy:{
+type:mongoose.Schema.Types.ObjectId,
+ref:"User"
+},
+
+scheduledTime:String
+
+},{timestamps:true})
+
+module.exports=mongoose.model("Request",requestSchema)

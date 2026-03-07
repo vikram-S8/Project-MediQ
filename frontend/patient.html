@@ -2,148 +2,58 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Patient Dashboard | MediQ</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
 
-:root{
---primary:#0d9488;
---primary-hover:#115e59;
---bg-gradient:linear-gradient(135deg,#f0fdfa 0%,#e0f2fe 100%);
---card-shadow:0 10px 15px -3px rgba(0,0,0,0.1);
-}
-
 body{
 font-family:'Inter',sans-serif;
-background:var(--bg-gradient);
-margin:0;
+background:#eef2ff;
 padding:20px;
-min-height:100vh;
-color:#334155;
 }
 
 .header{
 display:flex;
 justify-content:space-between;
 align-items:center;
-background:white;
-padding:20px 30px;
-border-radius:16px;
-box-shadow:var(--card-shadow);
 margin-bottom:20px;
-}
-
-.container{
-display:flex;
-gap:20px;
-flex-wrap:wrap;
 }
 
 .card{
 background:white;
-padding:25px;
-border-radius:16px;
-box-shadow:var(--card-shadow);
-flex:1;
-min-width:300px;
-}
-
-h3{
-margin-top:0;
-color:#1e293b;
+padding:20px;
+border-radius:10px;
+box-shadow:0 5px 10px rgba(0,0,0,0.1);
+margin-bottom:20px;
 }
 
 input,select,textarea{
 width:100%;
-padding:12px;
-margin:8px 0 15px 0;
-border:1px solid #cbd5e1;
-border-radius:8px;
-box-sizing:border-box;
-}
-
-input:focus,select:focus{
-outline:none;
-border-color:var(--primary);
-box-shadow:0 0 0 2px #ccfbf1;
+padding:10px;
+margin:8px 0;
+border-radius:6px;
+border:1px solid #ddd;
 }
 
 button{
-width:100%;
-padding:12px;
-background:var(--primary);
+background:#2563eb;
 color:white;
 border:none;
-border-radius:8px;
-font-weight:600;
+padding:10px;
+border-radius:6px;
 cursor:pointer;
-}
-
-button:hover{
-background:var(--primary-hover);
-}
-
-.logout-btn{
-background:#64748b;
-width:auto;
-padding:8px 20px;
-}
-
-.logout-btn:hover{
-background:#475569;
 }
 
 table{
 width:100%;
 border-collapse:collapse;
-margin-top:10px;
 }
 
-th{
-text-align:left;
-color:#64748b;
-font-size:0.85rem;
+td,th{
 padding:10px;
-border-bottom:2px solid #f1f5f9;
-}
-
-td{
-padding:15px 10px;
-border-bottom:1px solid #f1f5f9;
-}
-
-/* Progress bar */
-
-.progress-bg{
-background:#e2e8f0;
-width:100%;
-height:8px;
-border-radius:4px;
-overflow:hidden;
-}
-
-.progress-fill{
-height:100%;
-background:var(--primary);
-transition:width .5s ease;
-}
-
-/* Delete button */
-
-.delete-btn{
-background:#ef4444;
-padding:6px 12px;
-border:none;
-border-radius:6px;
-color:white;
-cursor:pointer;
-}
-
-.delete-btn:hover{
-background:#dc2626;
+border-bottom:1px solid #eee;
 }
 
 </style>
@@ -153,46 +63,48 @@ background:#dc2626;
 
 <div class="header">
 <h2>Patient Dashboard</h2>
-<button class="logout-btn" onclick="logout()">Logout</button>
+<button onclick="logout()">Logout</button>
 </div>
 
-<div class="container">
-
-<!-- CREATE REQUEST -->
 <div class="card">
 
-<h3>Create Request</h3>
+<h3>Submit Healthcare Query</h3>
 
-<form onsubmit="createRequest(event)">
+<form onsubmit="submitQuery(event)">
 
 <input id="name" placeholder="Patient Name" required>
 
-<textarea id="description" placeholder="Description" rows="3"></textarea>
+<select id="category" required>
+<option value="">Query Category</option>
+<option>Symptom</option>
+<option>Report Review</option>
+<option>Appointment</option>
+<option>Emergency</option>
+</select>
 
-<select id="type" required>
-<option value="">Select Type</option>
-<option value="Consultation">Consultation</option>
-<option value="Lab Test">Lab Test</option>
-<option value="Surgery">Surgery</option>
+<select id="department" required>
+<option value="">Department</option>
+<option>Cardiology</option>
+<option>Neurology</option>
+<option>Radiology</option>
+<option>General Medicine</option>
 </select>
 
 <select id="priority">
-<option value="Normal">Normal</option>
-<option value="Emergency">Emergency</option>
+<option>Normal</option>
+<option>Urgent</option>
+<option>Emergency</option>
 </select>
 
-<button type="submit">Submit Request</button>
+<textarea id="description" placeholder="Describe symptoms or query"></textarea>
+
+<button type="submit">Submit Query</button>
 
 </form>
 
-<p id="msg" style="margin-top:15px;font-size:0.9rem;color:var(--primary);"></p>
-
 </div>
 
-
-<!-- REQUEST TABLE -->
-
-<div class="card" style="flex:2;">
+<div class="card">
 
 <h3>My Requests</h3>
 
@@ -201,11 +113,10 @@ background:#dc2626;
 <thead>
 <tr>
 <th>ID</th>
-<th>Description</th>
-<th>Type</th>
+<th>Category</th>
+<th>Department</th>
 <th>Status</th>
 <th>Progress</th>
-<th>Action</th>
 </tr>
 </thead>
 
@@ -215,32 +126,26 @@ background:#dc2626;
 
 </div>
 
-</div>
-
-
 <script>
 
-const token = localStorage.getItem("token");
-const role = localStorage.getItem("role");
+const API="http://localhost:5000/api/query"
 
-const msg = document.getElementById("msg");
-const table = document.getElementById("table");
+const token=localStorage.getItem("token")
 
-if(!token || role !== "Patient"){
-alert("Login first");
-location="index.html";
+if(!token){
+alert("Please login first")
+location="index.html"
 }
 
+// ================= CREATE QUERY =================
 
-// CREATE REQUEST
+async function submitQuery(e){
 
-async function createRequest(e){
-
-e.preventDefault();
+e.preventDefault()
 
 try{
 
-const res = await fetch("http://localhost:5000/api/requests/create",{
+const res=await fetch(API+"/create",{
 
 method:"POST",
 
@@ -250,124 +155,92 @@ headers:{
 },
 
 body:JSON.stringify({
+
 patientName:document.getElementById("name").value,
-description:document.getElementById("description").value,
-type:document.getElementById("type").value,
-priority:document.getElementById("priority").value
+category:document.getElementById("category").value,
+department:document.getElementById("department").value,
+priority:document.getElementById("priority").value,
+description:document.getElementById("description").value
+
 })
 
-});
+})
 
-if(res.ok){
-msg.innerText="✅ Request Created";
-loadRequests();
-}else{
-msg.innerText="❌ Error creating request";
+const data=await res.json()
+
+if(!res.ok){
+throw new Error(data.msg || "Failed to create query")
 }
+
+alert("Query submitted successfully")
+
+document.querySelector("form").reset()
+
+loadQueries()
 
 }catch(err){
-console.error(err);
-msg.innerText="❌ Server error";
-}
+
+alert(err.message)
 
 }
 
+}
 
-// LOAD REQUESTS
+// ================= LOAD USER QUERIES =================
 
-async function loadRequests(){
+async function loadQueries(){
 
 try{
 
-const res = await fetch("http://localhost:5000/api/requests/my",{
-headers:{Authorization:"Bearer "+token}
-});
-
-const data = await res.json();
-
-table.innerHTML = data.map(r => `
-
-<tr>
-
-<td>${r._id.substring(0,5)}</td>
-
-<td>${r.description || "-"}</td>
-
-<td>${r.type}</td>
-
-<td>
-<strong>${r.status}</strong><br>
-<small style="color:#64748b">${r.currentStage}</small>
-</td>
-
-<td>
-<div class="progress-bg">
-<div class="progress-fill" style="width:${r.progress}%"></div>
-</div>
-</td>
-
-<td>
-<button class="delete-btn" onclick="deleteRequest('${r._id}')">
-Delete
-</button>
-</td>
-
-</tr>
-
-`).join('');
-
-}catch(err){
-console.error(err);
-}
-
-}
-
-
-// DELETE REQUEST
-
-async function deleteRequest(id){
-
-const confirmDelete = confirm("Are you sure you want to delete this request?");
-
-if(!confirmDelete) return;
-
-try{
-
-const res = await fetch(`http://localhost:5000/api/requests/delete/${id}`,{
-
-method:"DELETE",
+const res=await fetch(API+"/my",{
 
 headers:{
 "Authorization":"Bearer "+token
 }
 
-});
+})
 
-if(res.ok){
-alert("Request deleted successfully");
-loadRequests();
-}else{
-alert("Unable to delete request");
+const data=await res.json()
+
+const table=document.getElementById("table")
+
+if(!Array.isArray(data)){
+table.innerHTML="<tr><td colspan='5'>No data</td></tr>"
+return
 }
+
+table.innerHTML=data.map(q=>`
+
+<tr>
+
+<td>${q._id.substring(0,6)}</td>
+<td>${q.category}</td>
+<td>${q.department}</td>
+<td>${q.status}</td>
+<td>${q.progress || 10}%</td>
+
+</tr>
+
+`).join("")
 
 }catch(err){
-console.error(err);
-}
+
+console.error("Load error",err)
 
 }
 
+}
 
-// AUTO LOAD
-
-loadRequests();
-
-
-// LOGOUT
+// ================= LOGOUT =================
 
 function logout(){
-localStorage.clear();
-location="index.html";
+
+localStorage.clear()
+location="index.html"
+
 }
+
+loadQueries()
 
 </script>
 

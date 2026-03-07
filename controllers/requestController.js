@@ -1,208 +1,177 @@
-const Request = require("../models/Request");
+const Request=require("../models/Request")
 
-// ================= PROGRESS =================
+// CREATE REQUEST
 
-const calculateProgress = (request) => {
+exports.createRequest=async(req,res)=>{
 
-  const totalStages = request.workflow.length;
+try{
 
-  if (request.status === "Completed") return 100;
+const {patientName,description,type,priority}=req.body
 
-  return Math.floor((request.stageIndex / totalStages) * 100);
-};
+const request=new Request({
 
+patientName,
+description,
+type,
+priority,
 
-// ================= CREATE =================
+createdBy:req.user.id,
 
-exports.createRequest = async (req, res) => {
+workflow:["Doctor","Admin","Billing","OT"],
 
-  try {
+stageIndex:0,
+currentStage:"Doctor",
+status:"Pending"
 
-    const { patientName, description, type, priority } = req.body;
+})
 
-    const request = new Request({
-      patientName,
-      description,
-      type,
-      priority,
+await request.save()
 
-      createdBy: req.user.id,
+res.json(request)
 
-      workflow: ["Doctor", "Admin", "Billing", "OT"],
-      stageIndex: 0,
-      currentStage: "Doctor",
-      status: "Pending"
-    });
+}catch(err){
 
-    await request.save();
+res.status(500).json({message:err.message})
 
-    res.json({ message: "Request created" });
+}
 
-  } catch (err) {
+}
 
-    res.status(500).json({ message: err.message });
 
-  }
-};
+// GET USER REQUESTS
 
+exports.getMyRequests=async(req,res)=>{
 
-// ================= GET MY REQUESTS =================
+try{
 
-exports.getMyRequests = async (req, res) => {
+const requests=await Request.find({createdBy:req.user.id})
 
-  try {
+res.json(requests)
 
-    const requests = await Request.find({ createdBy: req.user.id });
+}catch(err){
 
-    const formatted = requests.map(r => ({
-      _id: r._id,
-      patientName: r.patientName,
-      description: r.description,
-      type: r.type,
-      status: r.status,
-      currentStage: r.currentStage,
-      workflow: r.workflow,
-      stageIndex: r.stageIndex,
-      progress: calculateProgress(r)
-    }));
+res.status(500).json({message:err.message})
 
-    res.json(formatted);
+}
 
-  } catch (err) {
+}
 
-    res.status(500).json({ message: err.message });
 
-  }
-};
+// ROLE BASED REQUESTS
 
+exports.getByRole=async(req,res)=>{
 
-// ================= DELETE =================
+try{
 
-exports.deleteRequest = async (req, res) => {
+const role=req.params.role
 
-  try {
+const requests=await Request.find({
+currentStage:role
+})
 
-    const request = await Request.findById(req.params.id);
+res.json(requests)
 
-    if (!request) {
-      return res.status(404).json({ message: "Request not found" });
-    }
+}catch(err){
 
-    if (request.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({ message: "Unauthorized" });
-    }
+res.status(500).json({message:err.message})
 
-    await request.deleteOne();
+}
 
-    res.json({ message: "Request deleted successfully" });
+}
 
-  } catch (err) {
 
-    res.status(500).json({ message: err.message });
+// FORWARD REQUEST
 
-  }
-};
+exports.forwardRequest=async(req,res)=>{
 
+try{
 
-// ================= ROLE BASED =================
+const {destination}=req.body
 
-exports.getByRole = async (req, res) => {
+const request=await Request.findById(req.params.id)
 
-  try {
+if(!request){
+return res.status(404).json({message:"Request not found"})
+}
 
-    const role = req.params.role;
+// find stage in workflow
+const stageIndex=request.workflow.indexOf(destination)
 
-    const requests = await Request.find({
-      currentStage: role
-    });
+if(stageIndex===-1){
+return res.status(400).json({message:"Invalid destination"})
+}
 
-    res.json(requests);
+request.stageIndex=stageIndex
+request.currentStage=destination
+request.status="In Progress"
 
-  } catch (err) {
+await request.save()
 
-    res.status(500).json({ message: err.message });
+res.json({message:"Forwarded successfully"})
 
-  }
-};
+}catch(err){
 
+res.status(500).json({message:err.message})
 
-// ================= FORWARD =================
+}
 
-exports.forwardRequest = async (req, res) => {
+}
 
-  try {
 
-    const { destination } = req.body;
+// NEXT STAGE
 
-    const request = await Request.findById(req.params.id);
+exports.nextStage=async(req,res)=>{
 
-    request.currentStage = destination;
-    request.status = "In Progress";
+try{
 
-    await request.save();
+const request=await Request.findById(req.params.id)
 
-    res.json({ message: "Forwarded successfully" });
+request.stageIndex++
 
-  } catch (err) {
+if(request.stageIndex>=request.workflow.length){
 
-    res.status(500).json({ message: err.message });
+request.status="Completed"
+request.currentStage="Completed"
 
-  }
-};
+}else{
 
+request.currentStage=request.workflow[request.stageIndex]
+request.status="In Progress"
 
-// ================= NEXT STAGE =================
+}
 
-exports.nextStage = async (req, res) => {
+await request.save()
 
-  try {
+res.json({message:"Moved to next stage"})
 
-    const request = await Request.findById(req.params.id);
+}catch(err){
 
-    request.stageIndex++;
+res.status(500).json({message:err.message})
 
-    if (request.stageIndex >= request.workflow.length) {
+}
 
-      request.status = "Completed";
-      request.currentStage = "Completed";
+}
 
-    } else {
 
-      request.currentStage = request.workflow[request.stageIndex];
-      request.status = "In Progress";
+// OT SCHEDULING
 
-    }
+exports.schedule=async(req,res)=>{
 
-    await request.save();
+try{
 
-    res.json({ message: "Moved to next stage" });
+const request=await Request.findById(req.params.id)
 
-  } catch (err) {
+request.scheduledTime=req.body.scheduledTime
+request.status="Scheduled"
 
-    res.status(500).json({ message: err.message });
+await request.save()
 
-  }
-};
+res.json({message:"Operation scheduled"})
 
+}catch(err){
 
-// ================= SCHEDULE =================
+res.status(500).json({message:err.message})
 
-exports.schedule = async (req, res) => {
+}
 
-  try {
-
-    const request = await Request.findById(req.params.id);
-
-    request.scheduledTime = req.body.scheduledTime;
-    request.status = "Scheduled";
-
-    await request.save();
-
-    res.json({ message: "Operation scheduled" });
-
-  } catch (err) {
-
-    res.status(500).json({ message: err.message });
-
-  }
-};
+}

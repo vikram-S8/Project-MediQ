@@ -1,20 +1,42 @@
-const Request = require("../models/Request");
+const Query=require("../models/Query")
 
-exports.getAdminOverview = async (req, res) => {
-  try {
+exports.analytics=async(req,res)=>{
 
-    // Get only requests currently waiting at Admin stage
-    const requests = await Request.find({ currentStage: "Admin" });
+try{
 
-    // Return single section for admin
-    res.json([
-      {
-        name: "Admin Queue",
-        requests: requests
-      }
-    ]);
+const total=await Query.countDocuments()
 
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
+const pending=await Query.countDocuments({status:"Pending"})
+
+const resolved=await Query.countDocuments({status:"Resolved"})
+
+const emergency=await Query.countDocuments({priority:"Emergency"})
+
+const cardiology=await Query.countDocuments({department:"Cardiology"})
+const neurology=await Query.countDocuments({department:"Neurology"})
+const radiology=await Query.countDocuments({department:"Radiology"})
+const general=await Query.countDocuments({department:"General Medicine"})
+
+res.json({
+
+total,
+pending,
+resolved,
+emergency,
+
+cardiology,
+neurology,
+radiology,
+general
+
+})
+
+}catch(err){
+
+console.error(err)
+
+res.status(500).json({msg:"Analytics error"})
+
+}
+
+}
